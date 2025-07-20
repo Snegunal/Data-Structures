@@ -1,0 +1,91 @@
+class Entrada:
+    def __init__(self, clave, valor):
+        self.clave = clave
+        self.valor = valor
+
+class TablaHash:
+    def __init__(self, tamaño=10):
+        self.tamaño = tamaño
+        self.tabla = [[] for _ in range(tamaño)]  # Encadenamiento con listas
+
+    def _hash(self, clave):
+        # Función hash simple: suma de caracteres
+        return sum(ord(c) for c in clave) % self.tamaño
+
+    def insertar(self, clave, valor):
+        indice = self._hash(clave)
+        for entrada in self.tabla[indice]:
+            if entrada.clave == clave:
+                entrada.valor = valor  # Actualizar si ya existe
+                return
+        self.tabla[indice].append(Entrada(clave, valor))
+
+    def buscar(self, clave):
+        indice = self._hash(clave)
+        for entrada in self.tabla[indice]:
+            if entrada.clave == clave:
+                return entrada.valor
+        return None
+
+    def eliminar(self, clave):
+        indice = self._hash(clave)
+        for i, entrada in enumerate(self.tabla[indice]):
+            if entrada.clave == clave:
+                del self.tabla[indice][i]
+                return True
+        return False
+
+    def mostrar_todo(self):
+        for i, lista in enumerate(self.tabla):
+            print(f"Índice {i}: ", end="")
+            for entrada in lista:
+                print(f"{entrada.clave} → {entrada.valor}", end=" | ")
+            print()
+
+def menu():
+    diccionario = TablaHash()
+    historial = []
+
+    while True:
+        print("\n--- Menú Diccionario ---")
+        print("1. Agregar palabra")
+        print("2. Buscar palabra")
+        print("3. Eliminar palabra")
+        print("4. Mostrar todo")
+        print("5. Ver historial de búsqueda")
+        print("6. Salir")
+
+        opcion = input("Opción: ")
+
+        if opcion == "1":
+            clave = input("Palabra en inglés: ").lower()
+            valor = input("Traducción: ").lower()
+            diccionario.insertar(clave, valor)
+            print("✅ Palabra agregada.")
+        elif opcion == "2":
+            clave = input("Palabra a buscar: ").lower()
+            valor = diccionario.buscar(clave)
+            if valor:
+                print(f"{clave} → {valor}")
+                historial.append(clave)
+            else:
+                print("❌ Palabra no encontrada.")
+        elif opcion == "3":
+            clave = input("Palabra a eliminar: ").lower()
+            if diccionario.eliminar(clave):
+                print("✅ Palabra eliminada.")
+            else:
+                print("❌ No se encontró esa palabra.")
+        elif opcion == "4":
+            diccionario.mostrar_todo()
+        elif opcion == "5":
+            print("📜 Historial de búsqueda:")
+            for palabra in reversed(historial):
+                print("-", palabra)
+        elif opcion == "6":
+            print("👋 Hasta luego.")
+            break
+        else:
+            print("Opción no válida.")
+# Ejecutar el menú
+menu()
