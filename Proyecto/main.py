@@ -1,24 +1,9 @@
-#SOLO ES UNA PRUEBA
+from PyQt6.QtWidgets import QApplication
+from interfaz import MainWindow
+import sys
 
-from Hash import HashTable
-
-
-
-diccionario = HashTable()
-
-# Insertar palabras
-diccionario.insert("perro", "Animal doméstico de cuatro patas.")
-diccionario.insert("errop", "Felino doméstico que maúlla.")
-diccionario.insert("pato", "Ave acuática que hace cuac.")
-
-# Buscar una palabra
-print("Buscar 'gato':", diccionario.search("gato"))
-
-# Mostrar toda la tabla
-print("\nDiccionario actual:")
-diccionario.display()
-
-# Eliminar una palabra
-diccionario.delete("pato")
-print("\nDespués de eliminar 'pato':")
-diccionario.display()
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    main_window = MainWindow()
+    main_window.show()
+    sys.exit(app.exec())
