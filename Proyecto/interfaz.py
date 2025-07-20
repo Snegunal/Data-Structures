@@ -3,13 +3,15 @@ from PyQt6.QtWidgets import (
     QTextEdit, QLabel, QMainWindow, QHBoxLayout
 )
 from Hash import HashTable
+from grafo import Grafo
 
 
 class SearchWindow(QWidget):
-    def __init__(self, table):
+    def __init__(self, table, grafo):
         super().__init__()
         self.setWindowTitle("Buscar palabra")
         self.table = table
+        self.grafo = grafo
         self.resize(400, 300)
 
         layout = QVBoxLayout()
@@ -31,17 +33,24 @@ class SearchWindow(QWidget):
     def search_word(self):
         word = self.word_input.text()
         definition = self.table.search(word)
+
         if definition:
-            self.result.setText(f"{word}: {definition}")
+            relacionados = self.grafo.vecinos(word)
+            texto = f"{word}: {definition}\n\nRelaciones: {', '.join(relacionados) if relacionados else 'Ninguna'}"
+            self.result.setText(texto)
         else:
             self.result.setText("Palabra no encontrada.")
 
 
+
+
+
 class AddWindow(QWidget):
-    def __init__(self, table):
+    def __init__(self, table, grafo):
         super().__init__()
         self.setWindowTitle("Agregar o eliminar palabra")
         self.table = table
+        self.grafo = grafo
         self.resize(400, 300)
 
         layout = QVBoxLayout()
@@ -67,11 +76,19 @@ class AddWindow(QWidget):
         layout.addWidget(delete_btn)
 
         self.setLayout(layout)
+        self.related_input = QLineEdit()
+        self.related_input.setPlaceholderText("Relacionar con (opcional)")
+        layout.addWidget(self.related_input)
 
     def add_word(self):
         word = self.word_input.text()
         definition = self.definition_input.text()
+        related = self.related_input.text()
         self.table.insert(word, definition)
+
+        if related:
+            self.grafo.agregar_relacion(word, related)
+
         self.result.setText(f"{word} agregado o actualizado.")
 
     def delete_word(self):
@@ -107,10 +124,16 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
+
+        self.grafo = Grafo()
+        self.add_window = AddWindow(self.table, self.grafo)
+
+
+
     def open_search(self):
-        self.search_window = SearchWindow(self.table)
+        self.search_window = SearchWindow(self.table, self.grafo)
         self.search_window.show()
 
     def open_add(self):
-        self.add_window = AddWindow(self.table)
+        self.add_window = AddWindow(self.table, self.grafo)
         self.add_window.show()
