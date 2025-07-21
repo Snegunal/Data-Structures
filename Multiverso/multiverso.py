@@ -70,7 +70,7 @@ def dibujar_flecha_curva(ax, pos_src, pos_dst, color='black', rad=0.3):
     ax.add_patch(arrow)
 
 def graficar(anillos, camino=[]):
-    plt.close('all')  # Cierra todas las figuras anteriores
+    plt.close('all')
     G = nx.DiGraph()
     pos = {}
     num_anillos = len(anillos)
@@ -95,12 +95,16 @@ def graficar(anillos, camino=[]):
             x = cx + radio_anillo * np.cos(angle)
             y = cy + radio_anillo * np.sin(angle)
             pos[nodo.valor] = (x, y)
-            G.add_edge(nodo.valor, centro.valor)
 
-        for j in range(len(nodos_no_centro)):
-            u = nodos_no_centro[j].valor
-            v = nodos_no_centro[(j+1) % len(nodos_no_centro)].valor
-            G.add_edge(u, v)
+        # Reglas de conexión:
+        if nodos_no_centro:
+            G.add_edge(centro.valor, nodos_no_centro[0].valor)  # centro → primer nodo
+            for j in range(len(nodos_no_centro)):
+                u = nodos_no_centro[j].valor
+                v = nodos_no_centro[(j + 1) % len(nodos_no_centro)].valor
+                G.add_edge(u, v)  # ciclo
+            for nodo in nodos_no_centro[1:]:
+                G.add_edge(nodo.valor, centro.valor)  # nodos 2..5 → centro
 
         if anillo.anillo_conectado:
             G.add_edge(anillo.centro.valor, anillo.anillo_conectado.centro.valor)
@@ -112,16 +116,13 @@ def graficar(anillos, camino=[]):
     ax.set_aspect('equal')
     ax.axis('off')
 
-    # Dibujar todas las flechas normales
     for u, v in G.edges():
         dibujar_flecha_curva(ax, pos[u], pos[v], color='gray', rad=0.3)
 
-    # Dibujar recorrido buscado en rojo
     if camino and len(camino) > 1:
         for i in range(len(camino) - 1):
-            dibujar_flecha_curva(ax, pos[camino[i]], pos[camino[i+1]], color='red', rad=0.4)
+            dibujar_flecha_curva(ax, pos[camino[i]], pos[camino[i + 1]], color='red', rad=0.4)
 
-    # Dibujar nodos
     for n in G.nodes():
         x, y = pos[n]
         if n in camino:
@@ -226,28 +227,45 @@ class App:
             return
 
         recorrido = []
-        for anillo in self.anillos:
-            actual = anillo.primero
-            for _ in range(anillo.tamano):
-                recorrido.append(actual.valor)
-                if actual.valor == valor_buscado:
-                    self.recorrido_completo = recorrido.copy()
+        try:
+            if valor_buscado.startswith("N"):
+                n_num = int(valor_buscado[1:])
+                anillo_idx = (n_num - 1) // 5
+                if anillo_idx >= len(self.anillos):
+                    self.recorrido_completo = []
                     self.camino_a_resaltar = []
-                    self.paso_actual = 0
-                    self.animar_busqueda()
+                    self.graficar_canvas(root)
                     return
-                actual = actual.siguiente
+                for i in range(anillo_idx + 1):
+                    recorrido.append(self.anillos[i].centro.valor)
+                actual = self.anillos[anillo_idx].primero.siguiente
+                for _ in range(1, self.anillos[anillo_idx].tamano):
+                    recorrido.append(actual.valor)
+                    if actual.valor == valor_buscado:
+                        break
+                    actual = actual.siguiente
 
-        # Nodo no encontrado
-        self.recorrido_completo = []
+            elif valor_buscado.startswith("C"):
+                c_num = int(valor_buscado[1:])
+                if c_num <= len(self.anillos):
+                    recorrido = [self.anillos[i].centro.valor for i in range(c_num)]
+                else:
+                    recorrido = []
+
+        except:
+            return
+
+        self.recorrido_completo = recorrido
         self.camino_a_resaltar = []
-        self.graficar_canvas(root)
+        self.paso_actual = 0
+        self.animar_busqueda()
+
     def animar_busqueda(self):
         if self.paso_actual < len(self.recorrido_completo):
             self.camino_a_resaltar = self.recorrido_completo[:self.paso_actual + 1]
             self.graficar_canvas(root)
             self.paso_actual += 1
-            root.after(500, self.animar_busqueda)  # 500 ms entre pasos
+            root.after(500, self.animar_busqueda)
 
 # --------- EJECUCIÓN ---------
 if __name__ == '__main__':
