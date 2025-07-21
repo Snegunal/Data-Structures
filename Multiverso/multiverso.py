@@ -69,11 +69,12 @@ def dibujar_flecha_curva(ax, pos_src, pos_dst, color='black', rad=0.3):
     )
     ax.add_patch(arrow)
 
-def graficar(anillos):
+def graficar(anillos, camino=[]):
+    plt.close('all')  # Cierra todas las figuras anteriores
     G = nx.DiGraph()
     pos = {}
     num_anillos = len(anillos)
-    radio_grande = 8 + num_anillos * 1.5  # Aumenta dinámicamente para evitar solapamiento
+    radio_grande = 8 + num_anillos * 1.5
     radio_anillo = 3
     offset_global = np.pi / 6
 
@@ -104,7 +105,6 @@ def graficar(anillos):
         if anillo.anillo_conectado:
             G.add_edge(anillo.centro.valor, anillo.anillo_conectado.centro.valor)
 
-    # Cerrar la conexión entre el último y el primero
     if len(anillos) > 1:
         G.add_edge(anillos[-1].centro.valor, anillos[0].centro.valor)
 
@@ -112,12 +112,25 @@ def graficar(anillos):
     ax.set_aspect('equal')
     ax.axis('off')
 
+    # Dibujar todas las flechas normales
     for u, v in G.edges():
         dibujar_flecha_curva(ax, pos[u], pos[v], color='gray', rad=0.3)
 
+    # Dibujar recorrido buscado en rojo
+    if camino and len(camino) > 1:
+        for i in range(len(camino) - 1):
+            dibujar_flecha_curva(ax, pos[camino[i]], pos[camino[i+1]], color='red', rad=0.4)
+
+    # Dibujar nodos
     for n in G.nodes():
         x, y = pos[n]
-        ax.plot(x, y, 'o', color='orange' if n.startswith("C") else 'skyblue', markersize=20)
+        if n in camino:
+            color = 'red'
+        elif n.startswith("C"):
+            color = 'orange'
+        else:
+            color = 'skyblue'
+        ax.plot(x, y, 'o', color=color, markersize=20)
         ax.text(x, y, n, fontsize=10, ha='center', va='center')
 
     all_x = [x for x, y in pos.values()]
@@ -133,9 +146,14 @@ class App:
     def __init__(self, root):
         self.anillos = []
         self.contador = 1
+        self.recorrido_completo = []
+        self.paso_actual = 0
+        self.animando = False
+
+        self.camino_a_resaltar = []
 
         anillo_inicial = Anillo("Anillo 1")
-        anillo_inicial.insertar(f"C1")
+        anillo_inicial.insertar("C1")
         self.anillos.append(anillo_inicial)
 
         frame = tk.Frame(root)
@@ -146,6 +164,12 @@ class App:
 
         btn_del = tk.Button(frame, text="Eliminar Nodo", command=self.eliminar_nodo)
         btn_del.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(frame, text="Buscar nodo:").grid(row=0, column=2, padx=5)
+        self.entry_busqueda = tk.Entry(frame, width=10)
+        self.entry_busqueda.grid(row=0, column=3, padx=5)
+        btn_buscar = tk.Button(frame, text="Buscar Nodo", command=self.buscar_nodo)
+        btn_buscar.grid(row=0, column=4, padx=5)
 
         self.fig = None
         self.canvas = None
@@ -158,7 +182,7 @@ class App:
             self.canvas.get_tk_widget().pack_forget()
             self.toolbar.pack_forget()
 
-        self.fig = graficar(self.anillos)
+        self.fig = graficar(self.anillos, self.camino_a_resaltar)
         self.canvas = FigureCanvasTkAgg(self.fig, master=root)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
@@ -179,6 +203,7 @@ class App:
         else:
             anillo_actual.insertar(f"N{self.contador}")
             self.contador += 1
+        self.camino_a_resaltar = []
         self.graficar_canvas(root)
 
     def eliminar_nodo(self):
@@ -192,7 +217,37 @@ class App:
             self.anillos.pop()
             self.anillos[-1].anillo_conectado = None
 
+        self.camino_a_resaltar = []
         self.graficar_canvas(root)
+
+    def buscar_nodo(self):
+        valor_buscado = self.entry_busqueda.get().strip()
+        if not valor_buscado:
+            return
+
+        recorrido = []
+        for anillo in self.anillos:
+            actual = anillo.primero
+            for _ in range(anillo.tamano):
+                recorrido.append(actual.valor)
+                if actual.valor == valor_buscado:
+                    self.recorrido_completo = recorrido.copy()
+                    self.camino_a_resaltar = []
+                    self.paso_actual = 0
+                    self.animar_busqueda()
+                    return
+                actual = actual.siguiente
+
+        # Nodo no encontrado
+        self.recorrido_completo = []
+        self.camino_a_resaltar = []
+        self.graficar_canvas(root)
+    def animar_busqueda(self):
+        if self.paso_actual < len(self.recorrido_completo):
+            self.camino_a_resaltar = self.recorrido_completo[:self.paso_actual + 1]
+            self.graficar_canvas(root)
+            self.paso_actual += 1
+            root.after(500, self.animar_busqueda)  # 500 ms entre pasos
 
 # --------- EJECUCIÓN ---------
 if __name__ == '__main__':
