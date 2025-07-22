@@ -41,12 +41,13 @@ class Anillo:
 
     def eliminar_ultimo(self):
         if self.tamano <= 1:
-            return
+            return None
         ultimo = self.primero.anterior
         penultimo = ultimo.anterior
         penultimo.siguiente = self.primero
         self.primero.anterior = penultimo
         self.tamano -= 1
+        return ultimo.valor
 
     def nodos(self):
         nodos = []
@@ -96,15 +97,14 @@ def graficar(anillos, camino=[]):
             y = cy + radio_anillo * np.sin(angle)
             pos[nodo.valor] = (x, y)
 
-        # Reglas de conexión:
         if nodos_no_centro:
-            G.add_edge(centro.valor, nodos_no_centro[0].valor)  # centro → primer nodo
+            G.add_edge(centro.valor, nodos_no_centro[0].valor)
             for j in range(len(nodos_no_centro)):
                 u = nodos_no_centro[j].valor
                 v = nodos_no_centro[(j + 1) % len(nodos_no_centro)].valor
-                G.add_edge(u, v)  # ciclo
+                G.add_edge(u, v)
             for nodo in nodos_no_centro[1:]:
-                G.add_edge(nodo.valor, centro.valor)  # nodos 2..5 → centro
+                G.add_edge(nodo.valor, centro.valor)
 
         if anillo.anillo_conectado:
             G.add_edge(anillo.centro.valor, anillo.anillo_conectado.centro.valor)
@@ -150,8 +150,8 @@ class App:
         self.recorrido_completo = []
         self.paso_actual = 0
         self.animando = False
-
         self.camino_a_resaltar = []
+        self.nodos_disponibles = []
 
         anillo_inicial = Anillo("Anillo 1")
         anillo_inicial.insertar("C1")
@@ -202,8 +202,13 @@ class App:
             anillo_actual.anillo_conectado = nuevo_anillo
             self.anillos.append(nuevo_anillo)
         else:
-            anillo_actual.insertar(f"N{self.contador}")
-            self.contador += 1
+            if self.nodos_disponibles:
+                nuevo_nombre = self.nodos_disponibles.pop()
+            else:
+                nuevo_nombre = f"N{self.contador}"
+                self.contador += 1
+            anillo_actual.insertar(nuevo_nombre)
+
         self.camino_a_resaltar = []
         self.graficar_canvas(root)
 
@@ -213,7 +218,9 @@ class App:
 
         anillo_actual = self.anillos[-1]
         if anillo_actual.tamano > 1:
-            anillo_actual.eliminar_ultimo()
+            eliminado = anillo_actual.eliminar_ultimo()
+            if eliminado and eliminado.startswith("N"):
+                self.nodos_disponibles.append(eliminado)
         elif len(self.anillos) > 1:
             self.anillos.pop()
             self.anillos[-1].anillo_conectado = None
