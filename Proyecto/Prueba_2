@@ -42,6 +42,48 @@ class TablaHash:
                 print(f"{entrada.clave} → {entrada.valor}", end=" | ")
             print()
 
+class NodoTrie:
+    def __init__(self):
+        self.hijos = {}
+        self.es_fin = False
+
+class Trie:
+    def __init__(self):
+        self.raiz = NodoTrie()
+
+    def insertar(self, palabra):
+        nodo = self.raiz
+        for letra in palabra:
+            if letra not in nodo.hijos:
+                nodo.hijos[letra] = NodoTrie()
+            nodo = nodo.hijos[letra]
+        nodo.es_fin = True
+
+    def buscar(self, palabra):
+        nodo = self.raiz
+        for letra in palabra:
+            if letra not in nodo.hijos:
+                return False
+            nodo = nodo.hijos[letra]
+        return nodo.es_fin
+
+    def sugerencias(self, prefijo):
+        resultados = []
+        nodo = self.raiz
+        for letra in prefijo:
+            if letra not in nodo.hijos:
+                return []  # No hay palabras con ese prefijo
+            nodo = nodo.hijos[letra]
+        self._dfs(nodo, prefijo, resultados)
+        return resultados
+
+    def _dfs(self, nodo, camino, resultados):
+        if nodo.es_fin:
+            resultados.append(camino)
+        for letra, hijo in nodo.hijos.items():
+            self._dfs(hijo, camino + letra, resultados)
+
+
 def menu():
     diccionario = TablaHash()
     historial = []
@@ -88,4 +130,5 @@ def menu():
         else:
             print("Opción no válida.")
 # Ejecutar el menú
+trie = Trie()
 menu()

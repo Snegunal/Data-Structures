@@ -4,14 +4,16 @@ from PyQt6.QtWidgets import (
 )
 from Hash import HashTable
 from grafo import Grafo
+from trie import Trie 
 
 
 class SearchWindow(QWidget):
-    def __init__(self, table, grafo):
+    def __init__(self, table, grafo,trie):
         super().__init__()
         self.setWindowTitle("Buscar palabra")
         self.table = table
         self.grafo = grafo
+        self.trie = trie
         self.resize(400, 300)
 
         layout = QVBoxLayout()
@@ -37,22 +39,30 @@ class SearchWindow(QWidget):
         if definition:
             relacionados = self.grafo.vecinos(word)
             texto = f"{word}: {definition}\n\nRelaciones: {', '.join(relacionados) if relacionados else 'Ninguna'}"
-            self.result.setText(texto)
         else:
-            self.result.setText("Palabra no encontrada.")
+            texto = "Palabra no encontrada."
+
+        # Mostrar sugerencias del Trie
+        sugerencias = self.trie.starts_with(word)
+        if sugerencias:
+            texto += "\n\nSugerencias:\n"
+            texto += "\n".join(f"{w}: {d}" for w, d in sugerencias if w != word)
+
+        self.result.setText(texto)
+
 
 
 
 
 
 class AddWindow(QWidget):
-    def __init__(self, table, grafo):
+    def __init__(self, table, grafo,trie):
         super().__init__()
         self.setWindowTitle("Agregar o eliminar palabra")
         self.table = table
         self.grafo = grafo
         self.resize(400, 300)
-
+        self.trie = trie
         layout = QVBoxLayout()
 
         self.word_input = QLineEdit()
@@ -85,6 +95,8 @@ class AddWindow(QWidget):
         definition = self.definition_input.text()
         related = self.related_input.text()
         self.table.insert(word, definition)
+        self.trie.insert(word, definition)
+
 
         if related:
             self.grafo.agregar_relacion(word, related)
@@ -106,6 +118,7 @@ class MainWindow(QMainWindow):
         self.resize(300, 150)
 
         self.table = HashTable()
+        self.trie = Trie()
 
         central_widget = QWidget()
         layout = QVBoxLayout()
@@ -126,14 +139,15 @@ class MainWindow(QMainWindow):
 
 
         self.grafo = Grafo()
-        self.add_window = AddWindow(self.table, self.grafo)
+        self.add_window = AddWindow(self.table, self.grafo, self.trie)
 
 
 
     def open_search(self):
-        self.search_window = SearchWindow(self.table, self.grafo)
+        self.search_window = SearchWindow(self.table, self.grafo, self.trie)
+
         self.search_window.show()
 
     def open_add(self):
-        self.add_window = AddWindow(self.table, self.grafo)
+        self.add_window = AddWindow(self.table, self.grafo, self.trie)
         self.add_window.show()
