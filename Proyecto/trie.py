@@ -44,3 +44,26 @@ class Trie:
             results.append((prefix, node.definition))
         for char, child in node.children.items():
             self._collect_words(child, prefix + char, results)
+
+    def delete(self, word):
+        def _delete_recursively(node, word, depth):
+            if depth == len(word):
+                if not node.is_end:
+                    return False  # La palabra no existe
+                node.is_end = False
+                node.definition = None
+                return len(node.children) == 0  # Si no tiene hijos, puede eliminarse
+
+            char = word[depth]
+            if char not in node.children:
+                return False  # La palabra no existe
+
+            should_delete_child = _delete_recursively(node.children[char], word, depth + 1)
+
+            if should_delete_child:
+                del node.children[char]
+                return not node.is_end and len(node.children) == 0
+
+            return False
+
+        _delete_recursively(self.root, word, 0)

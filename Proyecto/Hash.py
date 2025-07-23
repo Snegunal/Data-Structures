@@ -63,3 +63,19 @@ class HashTable:
             if bucket:
                 
                 print(f"Índice {i}: {[f'{e.key} -> {e.definition}' for e in bucket]}")
+
+    def keys(self):
+        """Devuelve una lista de todas las claves almacenadas en la tabla hash."""
+        claves = []
+        for bucket in self.table:
+            for entry in bucket:
+                claves.append(entry.key)
+        return claves
+
+    def items(self):
+        """Devuelve una lista de tuplas (clave, definición) de todas las entradas."""
+        elementos = []
+        for bucket in self.table:
+            for entry in bucket:
+                elementos.append((entry.key, entry.definition))
+        return elementos

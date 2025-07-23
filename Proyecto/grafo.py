@@ -14,3 +14,14 @@ class Grafo:
 
     def vecinos(self, palabra):
         return self.adyacencia.get(palabra, [])
+    
+    def eliminar_palabra(self, palabra):
+        # Elimina las conexiones desde la palabra
+        if palabra in self.adyacencia:
+            del self.adyacencia[palabra]
+
+        # Elimina las conexiones hacia la palabra
+        for vecinos in self.adyacencia.values():
+            if palabra in vecinos:
+                vecinos.remove(palabra)
+

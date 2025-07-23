@@ -5,6 +5,9 @@ from PyQt6.QtWidgets import (
 from Hash import HashTable
 from grafo import Grafo
 from trie import Trie 
+from persistencia import guardar_diccionario  # al inicio del archivo
+from persistencia import cargar_diccionario  # al inicio
+
 
 
 class SearchWindow(QWidget):
@@ -20,6 +23,8 @@ class SearchWindow(QWidget):
 
         self.word_input = QLineEdit()
         self.word_input.setPlaceholderText("Palabra a buscar")
+        self.word_input.textChanged.connect(self.autocompletar)
+
         layout.addWidget(self.word_input)
 
         self.result = QTextEdit()
@@ -47,6 +52,20 @@ class SearchWindow(QWidget):
         if sugerencias:
             texto += "\n\nSugerencias:\n"
             texto += "\n".join(f"{w}: {d}" for w, d in sugerencias if w != word)
+
+        self.result.setText(texto)
+
+    def autocompletar(self):
+        prefijo = self.word_input.text()
+        if not prefijo:
+            self.result.clear()
+            return
+
+        sugerencias = self.trie.starts_with(prefijo)
+        if sugerencias:
+            texto = "Sugerencias:\n" + "\n".join(f"{w}: {d}" for w, d in sugerencias)
+        else:
+            texto = "Sin sugerencias."
 
         self.result.setText(texto)
 
@@ -94,22 +113,25 @@ class AddWindow(QWidget):
         word = self.word_input.text()
         definition = self.definition_input.text()
         related = self.related_input.text()
+
         self.table.insert(word, definition)
         self.trie.insert(word, definition)
-
 
         if related:
             self.grafo.agregar_relacion(word, related)
 
+        guardar_diccionario("diccionario.json", self.table, self.grafo)
         self.result.setText(f"{word} agregado o actualizado.")
 
     def delete_word(self):
         word = self.word_input.text()
         if self.table.delete(word):
+            self.trie.delete(word)
+            self.grafo.eliminar_palabra(word)
+            guardar_diccionario("diccionario.json", self.table, self.grafo)
             self.result.setText(f"{word} eliminado.")
         else:
             self.result.setText("Palabra no encontrada.")
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -139,15 +161,20 @@ class MainWindow(QMainWindow):
 
 
         self.grafo = Grafo()
-        self.add_window = AddWindow(self.table, self.grafo, self.trie)
+        #self.add_window = AddWindow(self.table, self.grafo, self.trie)
+                
+        cargar_diccionario("diccionario.json", self.table, self.grafo, self.trie)
 
 
 
     def open_search(self):
-        self.search_window = SearchWindow(self.table, self.grafo, self.trie)
-
+        if not hasattr(self, 'search_window') or self.search_window is None:
+            self.search_window = SearchWindow(self.table, self.grafo, self.trie)
         self.search_window.show()
 
+
     def open_add(self):
-        self.add_window = AddWindow(self.table, self.grafo, self.trie)
+        if not hasattr(self, 'add_window') or self.add_window is None:
+            self.add_window = AddWindow(self.table, self.grafo, self.trie)
         self.add_window.show()
+

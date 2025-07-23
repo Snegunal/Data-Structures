@@ -1,0 +1,8 @@
+{
+  "casa": {
+    "definicion": "Lugar para vivir",
+    "relaciones": [
+      "Hogar"
+    ]
+  }
+}
