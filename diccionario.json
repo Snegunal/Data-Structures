@@ -1,8 +1,25 @@
 {
+  "Patacon": {
+    "definicion": "Comida",
+    "relaciones": [
+      "Comida",
+      "alimento",
+      "delicioso"
+    ]
+  },
   "casa": {
     "definicion": "Lugar para vivir",
     "relaciones": [
       "Hogar"
+    ]
+  },
+  "Queso": {
+    "definicion": "Comida",
+    "relaciones": [
+      "Comida",
+      "alimento",
+      "delicioso",
+      "salado"
     ]
   }
 }

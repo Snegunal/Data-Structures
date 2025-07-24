@@ -110,15 +110,25 @@ class AddWindow(QWidget):
         layout.addWidget(self.related_input)
 
     def add_word(self):
-        word = self.word_input.text()
-        definition = self.definition_input.text()
-        related = self.related_input.text()
+        word = self.word_input.text().strip()
+        definition = self.definition_input.text().strip()
+        related_text = self.related_input.text().strip()
 
         self.table.insert(word, definition)
         self.trie.insert(word, definition)
 
-        if related:
-            self.grafo.agregar_relacion(word, related)
+        if related_text:
+            # Separar palabras por coma, quitar espacios
+            related_words = [w.strip() for w in related_text.split(',') if w.strip()]
+
+            # Relacionar la palabra ingresada con cada palabra de la lista
+            for related in related_words:
+                self.grafo.agregar_relacion(word, related)
+
+            # Además, si quieres que las palabras entre sí también se conecten entre ellas (como clúster):
+            for i in range(len(related_words)):
+                for j in range(i + 1, len(related_words)):
+                    self.grafo.agregar_relacion(related_words[i], related_words[j])
 
         guardar_diccionario("diccionario.json", self.table, self.grafo)
         self.result.setText(f"{word} agregado o actualizado.")
