@@ -1,5 +1,7 @@
+import sys
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import networkx as nx
@@ -98,13 +100,13 @@ def graficar(anillos, camino=[]):
             pos[nodo.valor] = (x, y)
 
         if nodos_no_centro:
-            G.add_edge(centro.valor, nodos_no_centro[0].valor)
+            G.add_edge(centro.valor, nodos_no_centro[0].valor) #centro->primer nodo
             for j in range(len(nodos_no_centro)):
                 u = nodos_no_centro[j].valor
                 v = nodos_no_centro[(j + 1) % len(nodos_no_centro)].valor
-                G.add_edge(u, v)
+                G.add_edge(u, v) #agrega centro
             for nodo in nodos_no_centro[1:]:
-                G.add_edge(nodo.valor, centro.valor)
+                G.add_edge(nodo.valor, centro.valor) #apunta los nodos al sol
 
         if anillo.anillo_conectado:
             G.add_edge(anillo.centro.valor, anillo.anillo_conectado.centro.valor)
@@ -238,13 +240,23 @@ class App:
             if valor_buscado.startswith("N"):
                 n_num = int(valor_buscado[1:])
                 anillo_idx = (n_num - 1) // 5
-                if anillo_idx >= len(self.anillos):
+                total_planetas = sum(anillo.tamano - 1 for anillo in self.anillos)
+                if n_num>total_planetas:
+                    messagebox.showinfo("Planeta no encontrado", f"El nodo {valor_buscado} aún no existe. Sigue ampliando tu multiverso!!")
                     self.recorrido_completo = []
                     self.camino_a_resaltar = []
                     self.graficar_canvas(root)
                     return
+                if anillo_idx >= len(self.anillos):
+                    messagebox.showinfo("Nodo no encontrado",f"El nodo {valor_buscado} aún no existe. El multiverso no se ha expandido tanto!")
+                    self.recorrido_completo = []
+                    self.camino_a_resaltar = []
+                    self.graficar_canvas(root)
+                    return
+                    #Agrega centros hasta el sol correspondiente
                 for i in range(anillo_idx + 1):
                     recorrido.append(self.anillos[i].centro.valor)
+                #busca el planeta en el sistema solar
                 actual = self.anillos[anillo_idx].primero.siguiente
                 for _ in range(1, self.anillos[anillo_idx].tamano):
                     recorrido.append(actual.valor)
@@ -257,6 +269,7 @@ class App:
                 if c_num <= len(self.anillos):
                     recorrido = [self.anillos[i].centro.valor for i in range(c_num)]
                 else:
+                    messagebox.showinfo("Centro no encontrado",f"El sol {valor_buscado} aún no se ha generado.")
                     recorrido = []
 
         except:
@@ -276,8 +289,12 @@ class App:
 
 # --------- EJECUCIÓN ---------
 if __name__ == '__main__':
+    def cerrar_programa():
+        root.destroy()
+        sys.exit()
     root = tk.Tk()
     root.title("Editor de Anillos Dinámicos")
     app = App(root)
     root.geometry("1000x900")
+    root.protocol("WM_DELETE_WINDOW", cerrar_programa)
     root.mainloop()
